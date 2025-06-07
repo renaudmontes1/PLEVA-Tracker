@@ -1,0 +1,1027 @@
+import SwiftUI
+import SwiftData
+import PhotosUI
+import Charts  // Add Charts import
+
+struct WeekDayView: View {
+    let date: Date
+    let hasEntry: Bool
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    private var dayLetter: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEEE" // Single letter day format
+        return formatter.string(from: date)
+    }
+    
+    private var dayNumber: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(dayLetter)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Circle()
+                .fill(backgroundColor)
+                .overlay {
+                    Text(dayNumber)
+                        .font(.caption2)
+                        .foregroundStyle(isSelected ? .white : .primary)
+                }
+                .frame(width: 32, height: 32)
+        }
+        .onTapGesture(perform: onTap)
+    }
+    
+    private var backgroundColor: Color {
+        if isSelected {
+            return .blue
+        } else if hasEntry {
+            return .blue.opacity(0.2)
+        } else {
+            return .gray.opacity(0.1)
+        }
+    }
+}
+
+struct WeekView: View {
+    let currentWeek: Date
+    let entries: [DiaryEntry]
+    let selectedDate: Date
+    let onDaySelected: (Date) -> Void
+    let onWeekChange: (Date) -> Void
+    
+    private var weekDates: [Date] {
+        let calendar = Calendar.current
+        // Get start of the week for the current week date
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentWeek)
+        // Make sure we get the actual first day of week (Sunday or Monday depending on locale)
+        guard let sunday = calendar.date(from: components) else { return [] }
+        
+        return (0..<7).map { day in
+            calendar.date(byAdding: .day, value: day, to: sunday) ?? Date()
+        }
+    }
+    
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: currentWeek)
+    }
+    
+    private var todayString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d"
+        return formatter.string(from: Date())
+    }
+    
+    private func hasEntry(for date: Date) -> Bool {
+        entries.contains { entry in
+            Calendar.current.isDate(entry.timestamp, inSameDayAs: date)
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header section
+            let headerContent = VStack(alignment: .leading) {
+                Text(monthYearString)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("Today: \(Date().formatted(.dateTime.month().day()))")
+                    .font(.title2)
+                    .bold()
+            }
+            
+            HStack {
+                Button(action: { moveWeek(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(.blue)
+                }
+                
+                headerContent
+                
+                Spacer()
+                
+                Button(action: { moveWeek(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Week view
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(weekDates, id: \.timeIntervalSince1970) { date in
+                        let isDateSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
+                        WeekDayView(
+                            date: date,
+                            hasEntry: hasEntry(for: date),
+                            isSelected: isDateSelected,
+                            onTap: { onDaySelected(date) }
+                        )
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+        .padding(.vertical)
+        .background(Color.gray.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    private func moveWeek(by numberOfWeeks: Int) {
+        let calendar = Calendar.current
+        if let newDate = calendar.date(byAdding: .weekOfYear, value: numberOfWeeks, to: currentWeek) {
+            onWeekChange(newDate)
+        }
+    }
+}
+
+struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \DiaryEntry.timestamp, order: .reverse) private var entries: [DiaryEntry]
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var selectedDate: Date
+    @State private var showingEntrySheet = false
+    @State private var showingImageViewer = false
+    @State private var selectedEntry: DiaryEntry?
+    @State private var weeklySummary: String = "Tap 'Generate Summary' to analyze this week's entries"
+    @State private var isGeneratingSummary = false
+    @State private var showingSettings = false
+    @State private var currentWeek: Date
+    @State private var isWeeklySummaryExpanded = false
+    private let openAIService = OpenAIService()
+    
+    init() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        _selectedDate = State(initialValue: today)
+        _currentWeek = State(initialValue: today)
+    }
+    
+    var weeklyEntries: [DiaryEntry] {
+        let calendar = Calendar.current
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
+        let filtered = entries.filter { $0.timestamp >= weekAgo }
+        print("Total entries: \(entries.count), Weekly entries: \(filtered.count)")
+        return filtered
+    }
+    
+    private func handleDaySelected(_ date: Date) {
+        selectedDate = date
+        selectedEntry = entries.first { Calendar.current.isDate($0.timestamp, inSameDayAs: date) }
+        showingEntrySheet = true
+    }
+    
+    private func handleWeekChange(_ newDate: Date) {
+        withAnimation {
+            currentWeek = newDate
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            // Weekly Summary Section
+                            WeeklySummaryView(
+                                isExpanded: $isWeeklySummaryExpanded,
+                                summary: weeklySummary,
+                                isGenerating: isGeneratingSummary,
+                                hasEntries: !weeklyEntries.isEmpty,
+                                onGenerate: generateWeeklySummary
+                            )
+                            .padding(.vertical)
+                            
+                            // Weekly Calendar View
+                            WeekView(
+                                currentWeek: currentWeek,
+                                entries: entries,
+                                selectedDate: selectedDate,
+                                onDaySelected: handleDaySelected,
+                                onWeekChange: handleWeekChange
+                            )
+                            .padding(.horizontal)
+                            
+                            // Add Weekly Trend Chart
+                            WeeklyTrendChart(entries: entries)
+                                .padding(.horizontal)
+                                .padding(.top)
+                        }
+                    }
+                    .frame(maxHeight: 600) // Increased to accommodate the chart
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                }
+                
+                // Entries section
+                ForEach(entries) { entry in
+                    EntryRowView(entry: entry)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .onTapGesture {
+                            selectedEntry = entry
+                            showingEntrySheet = true
+                        }
+                }
+                .onDelete(perform: deleteEntries)
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("PLEVA Diary")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showingSettings = true }) {
+                        Image(systemName: "gear")
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Get the start of today
+                        let calendar = Calendar.current
+                        let today = calendar.startOfDay(for: Date())
+                        
+                        selectedEntry = nil
+                        selectedDate = today
+                        showingEntrySheet = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(.blue)
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background {
+                Color(uiColor: .systemGroupedBackground)
+                    .edgesIgnoringSafeArea(.all)
+            }
+            .edgesIgnoringSafeArea(.bottom)
+            .sheet(isPresented: $showingEntrySheet) {
+                NavigationStack {
+                    EntryFormView(entry: selectedEntry, selectedDate: selectedDate)
+                        .navigationTitle(selectedEntry == nil ? "New Entry" : "Edit Entry")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .background(Color(uiColor: .systemGroupedBackground))
+                }
+                .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+            }
+        }
+    }
+    
+    private func generateWeeklySummary() {
+        guard !weeklyEntries.isEmpty else {
+            print("No weekly entries found")
+            return
+        }
+        
+        print("Generating summary for \(weeklyEntries.count) entries")
+        isGeneratingSummary = true
+        Task {
+            do {
+                let summary = try await openAIService.generateWeeklySummary(from: weeklyEntries)
+                await MainActor.run {
+                    weeklySummary = summary
+                    isGeneratingSummary = false
+                    
+                    // Store the summary in the latest entry
+                    if let latestEntry = weeklyEntries.first {
+                        print("Storing summary in latest entry from \(latestEntry.timestamp)")
+                        latestEntry.weeklySummary = summary
+                        latestEntry.summaryDate = Date()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    print("Error generating summary: \(error)")
+                    weeklySummary = "Error generating summary: \(error.localizedDescription)"
+                    isGeneratingSummary = false
+                }
+            }
+        }
+    }
+    
+    private func deleteEntries(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(entries[index])
+            }
+        }
+    }
+}
+
+struct WeeklySummaryView: View {
+    @Binding var isExpanded: Bool
+    let summary: String
+    let isGenerating: Bool
+    let hasEntries: Bool
+    let onGenerate: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Weekly Summary")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    Label(
+                        isExpanded ? "Collapse" : "Expand",
+                        systemImage: isExpanded ? "chevron.up" : "chevron.down"
+                    )
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(.blue)
+                }
+            }
+            .padding(.horizontal)
+            
+            if isExpanded || summary == "Tap 'Generate Summary' to analyze this week's entries" {
+                Text(summary)
+                    .font(.subheadline)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+                
+                Button(action: onGenerate) {
+                    HStack {
+                        Text("Generate Summary")
+                        if isGenerating {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                }
+                .disabled(isGenerating || !hasEntries)
+                .buttonStyle(.bordered)
+                .padding(.horizontal)
+            }
+        }
+    }
+}
+
+struct EntryRowView: View {
+    let entry: DiaryEntry
+    
+    private var totalPapuleCount: Int {
+        entry.papulesFace +
+        entry.papulesNeck +
+        entry.papulesChest +
+        entry.papulesLeftArm +
+        entry.papulesRightArm +
+        entry.papulesBack +
+        entry.papulesButtocks +
+        entry.papulesLeftLeg +
+        entry.papulesRightLeg
+    }
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
+                    .font(.headline)
+                Text(entry.location)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if (!entry.notes.isEmpty) {
+                    Text(entry.notes)
+                        .lineLimit(2)
+                        .font(.subheadline)
+                }
+            }
+            
+            Spacer()
+            
+            if totalPapuleCount > 0 {
+                Text("\(totalPapuleCount) papules")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.trailing, 8)
+            }
+            
+            SeverityBadgeView(severity: entry.severity)
+            
+            if !entry.photos.isEmpty {
+                HStack(spacing: 2) {
+                    Image(systemName: "photo.fill")
+                    Text("\(entry.photos.count)")
+                        .font(.caption)
+                }
+                .foregroundStyle(.blue)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+struct PhotoGalleryView: View {
+    let photos: [Data]
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: 12) {
+                ForEach(photos.indices, id: \.self) { index in
+                    if let uiImage = UIImage(data: photos[index]) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+}
+
+struct EntryFormView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    
+    let entry: DiaryEntry?
+    let selectedDate: Date
+    
+    @State private var notes: String = ""
+    @State private var severity: Int = 1
+    @State private var location: String = ""
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var photosData: [Data] = []
+    @State private var showingDeleteConfirmation = false
+    @State private var papulesFace: Int = 0
+    @State private var papulesNeck: Int = 0
+    @State private var papulesChest: Int = 0
+    @State private var papulesLeftArm: Int = 0
+    @State private var papulesRightArm: Int = 0
+    @State private var papulesBack: Int = 0
+    @State private var papulesButtocks: Int = 0
+    @State private var papulesLeftLeg: Int = 0
+    @State private var papulesRightLeg: Int = 0
+    @FocusState private var focusedField: String?
+    
+    init(entry: DiaryEntry?, selectedDate: Date) {
+        self.entry = entry
+        self.selectedDate = selectedDate
+    }
+    
+    var body: some View {
+        Form {
+            Section("Notes") {
+                TextEditor(text: $notes)
+                    .frame(height: 100)
+            }
+            
+            Section("Location") {
+                TextField("Body location", text: $location)
+            }
+            
+            Section("Severity (1-5)") {
+                Picker("Severity", selection: $severity) {
+                    ForEach(1...5, id: \.self) { level in
+                        Text("\(level)").tag(level)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            
+            Section("Photos") {
+                PhotosPicker(selection: $selectedPhotos,
+                           maxSelectionCount: 30,
+                           matching: .images) {
+                    HStack {
+                        Image(systemName: "photo.badge.plus")
+                        Text(photosData.isEmpty ? "Add Photos" : "Add More Photos")
+                    }
+                }
+                
+                if !photosData.isEmpty {
+                    PhotoGalleryView(photos: photosData)
+                        .frame(height: 120)
+                }
+            }
+            
+            Section("Papule Count") {
+                PapuleCountView(title: "Face", count: $papulesFace, id: "face", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Neck", count: $papulesNeck, id: "neck", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Chest", count: $papulesChest, id: "chest", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Left Arm", count: $papulesLeftArm, id: "leftArm", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Right Arm", count: $papulesRightArm, id: "rightArm", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Back", count: $papulesBack, id: "back", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Buttocks", count: $papulesButtocks, id: "buttocks", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Left Leg", count: $papulesLeftLeg, id: "leftLeg", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Right Leg", count: $papulesRightLeg, id: "rightLeg", focusedField: _focusedField.projectedValue)
+            }
+            
+            if entry != nil {
+                Section {
+                    Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
+                        Text("Delete Entry")
+                    }
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    saveEntry()
+                    dismiss()
+                }
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focusedField = nil
+                }
+            }
+        }
+        .onAppear {
+            if let entry = entry {
+                notes = entry.notes
+                severity = entry.severity
+                location = entry.location
+                photosData = entry.photos
+                papulesFace = entry.papulesFace
+                papulesNeck = entry.papulesNeck
+                papulesChest = entry.papulesChest
+                papulesLeftArm = entry.papulesLeftArm
+                papulesRightArm = entry.papulesRightArm
+                papulesBack = entry.papulesBack
+                papulesButtocks = entry.papulesButtocks
+                papulesLeftLeg = entry.papulesLeftLeg
+                papulesRightLeg = entry.papulesRightLeg
+            }
+        }
+        .onChange(of: selectedPhotos) { oldValue, newValue in
+            Task {
+                var newPhotosData: [Data] = []
+                for item in selectedPhotos {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        newPhotosData.append(data)
+                    }
+                }
+                photosData.append(contentsOf: newPhotosData)
+            }
+        }
+        .alert("Delete Entry", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                if let entry = entry {
+                    modelContext.delete(entry)
+                    dismiss()
+                }
+            }
+        }
+    }
+    
+    private func saveEntry() {
+        if let entry = entry {
+            // Update existing entry
+            entry.notes = notes
+            entry.severity = severity
+            entry.location = location
+            entry.photos = photosData
+            entry.papulesFace = papulesFace
+            entry.papulesNeck = papulesNeck
+            entry.papulesChest = papulesChest
+            entry.papulesLeftArm = papulesLeftArm
+            entry.papulesRightArm = papulesRightArm
+            entry.papulesBack = papulesBack
+            entry.papulesButtocks = papulesButtocks
+            entry.papulesLeftLeg = papulesLeftLeg
+            entry.papulesRightLeg = papulesRightLeg
+        } else {
+            // Create new entry with the selected date
+            let calendar = Calendar.current
+            let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
+            let currentTime = calendar.dateComponents([.hour, .minute], from: Date())
+            
+            // Combine the selected date with current time
+            var combinedComponents = DateComponents()
+            combinedComponents.year = selectedComponents.year
+            combinedComponents.month = selectedComponents.month
+            combinedComponents.day = selectedComponents.day
+            combinedComponents.hour = currentTime.hour
+            combinedComponents.minute = currentTime.minute
+            
+            let timestamp = calendar.date(from: combinedComponents) ?? selectedDate
+            
+            let newEntry = DiaryEntry(
+                timestamp: timestamp,
+                notes: notes,
+                severity: severity,
+                photos: photosData,
+                location: location,
+                papulesFace: papulesFace,
+                papulesNeck: papulesNeck,
+                papulesChest: papulesChest,
+                papulesLeftArm: papulesLeftArm,
+                papulesRightArm: papulesRightArm,
+                papulesBack: papulesBack,
+                papulesButtocks: papulesButtocks,
+                papulesLeftLeg: papulesLeftLeg,
+                papulesRightLeg: papulesRightLeg
+            )
+            modelContext.insert(newEntry)
+        }
+    }
+}
+
+struct SeverityBadgeView: View {
+    let severity: Int
+    
+    var color: Color {
+        switch severity {
+        case 1: return .green
+        case 2: return .mint
+        case 3: return .yellow
+        case 4: return .orange
+        case 5: return .red
+        default: return .gray
+        }
+    }
+    
+    var body: some View {
+        Text("\(severity)")
+            .font(.caption.bold())
+            .padding(6)
+            .background(color.opacity(0.2))
+            .foregroundStyle(color)
+            .clipShape(Circle())
+    }
+}
+
+struct PapuleCountView: View {
+    let title: String
+    @Binding var count: Int
+    let id: String
+    var focusedField: FocusState<String?>.Binding
+    
+    private static let numberFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .none
+        formatter.zeroSymbol = ""
+        return formatter
+    }()
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            TextField("", value: $count, formatter: Self.numberFormatter)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
+                .textFieldStyle(.roundedBorder)
+                .focused(focusedField, equals: id)
+                .tag(id)
+        }
+    }
+}
+
+struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var isTestingConnection = false
+    @State private var testResult: String = "Not tested"
+    private let openAIService = OpenAIService()
+    
+    private var plistContents: [String: String] {
+        let bundle = Bundle.main
+        let keys = ["AZURE_OPENAI_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_DEPLOYMENT"]
+        var contents: [String: String] = [:]
+        
+        for key in keys {
+            if let value = bundle.object(forInfoDictionaryKey: key) as? String {
+                // Mask sensitive data
+                if key == "AZURE_OPENAI_KEY" {
+                    let masked = String(value.prefix(8)) + "..." + String(value.suffix(4))
+                    contents[key] = masked
+                } else {
+                    contents[key] = value
+                }
+            }
+        }
+        
+        return contents
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Azure OpenAI Configuration") {
+                    Button(action: testConnection) {
+                        HStack {
+                            Text("Test Connection")
+                            if isTestingConnection {
+                                Spacer()
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(isTestingConnection)
+                    
+                    Text(testResult)
+                        .foregroundStyle(
+                            testResult == "Connection successful" ? .green :
+                            testResult == "Not tested" ? .gray : .red
+                        )
+                }
+                    
+                Section("Changelog") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Group {
+                            Text("Version 1.0.1")
+                                .font(.headline)
+                            
+                            Text("March 24, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("New Features:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Detailed papule count tracking by body region",
+                                        "Total papule count in entry list",
+                                        "Keyboard-optimized numeric inputs"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.bottom, 16)
+                        
+                        Group {
+                            Text("Version 1.0.0")
+                                .font(.headline)
+                            
+                            Text("Initial Release - March 7, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Initial Features:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Weekly calendar view",
+                                        "Entry creation and editing",
+                                        "Photo attachments",
+                                        "Severity tracking (1-5)",
+                                        "Weekly AI summaries",
+                                        "Location tracking"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                    }
+                }
+                
+                Section("Configuration Values") {
+                    ForEach(Array(plistContents.keys.sorted()), id: \.self) { key in
+                        if let value = plistContents[key] {
+                            VStack(alignment: .leading) {
+                                Text(key)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(value)
+                                    .font(.callout)
+                            }
+                        }
+                    }
+                }
+                
+                Section("About") {
+                    Text("PLEVA Diary")
+                        .foregroundStyle(.secondary)
+                    Text("Version 1.0")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func testConnection() {
+        isTestingConnection = true
+        testResult = "Testing..."
+        
+        Task {
+            do {
+                let success = try await openAIService.testConnection()
+                await MainActor.run {
+                    testResult = success ? "Connection successful" : "Connection failed"
+                    isTestingConnection = false
+                }
+            } catch OpenAIError.invalidAPIKey {
+                await MainActor.run {
+                    testResult = "Invalid API Key"
+                    isTestingConnection = false
+                }
+            } catch OpenAIError.invalidEndpoint {
+                await MainActor.run {
+                    testResult = "Invalid Endpoint"
+                    isTestingConnection = false
+                }
+            } catch {
+                await MainActor.run {
+                    testResult = "Error: \(error.localizedDescription)"
+                    isTestingConnection = false
+                }
+            }
+        }
+    }
+}
+
+struct WeeklyTrendChart: View {
+    let entries: [DiaryEntry]
+    
+    private struct WeeklyData: Identifiable {
+        let weekStart: Date
+        let averageCount: Double
+        var id: Date { weekStart }
+    }
+    
+    private var weeklyAverages: [WeeklyData] {
+        let calendar = Calendar.current
+        let today = Date()
+        let sixWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -6, to: today) ?? today
+        
+        // Create an array of all week starts
+        var allWeekStarts: [Date] = []
+        var currentDate = sixWeeksAgo
+        
+        while currentDate <= today {
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
+            let alreadyExists = allWeekStarts.contains {
+                calendar.isDate($0, equalTo: weekStart, toGranularity: .weekOfYear)
+            }
+            if !alreadyExists {
+                allWeekStarts.append(weekStart)
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        // Group entries by week
+        var weeklyGroups: [Date: [Int]] = [:]
+        
+        // Initialize all weeks with empty arrays
+        for weekStart in allWeekStarts {
+            weeklyGroups[weekStart] = []
+        }
+        
+        // Process entries and group them by week
+        for entry in entries {
+            guard entry.timestamp >= sixWeeksAgo else { continue }
+            
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: entry.timestamp)) ?? entry.timestamp
+            
+            // Calculate total papules for different body regions
+            let upperBodyCount = entry.papulesFace +
+                               entry.papulesNeck +
+                               entry.papulesChest +
+                               entry.papulesLeftArm +
+                               entry.papulesRightArm +
+                               entry.papulesBack
+            
+            let lowerBodyCount = entry.papulesButtocks +
+                               entry.papulesLeftLeg +
+                               entry.papulesRightLeg
+            
+            let totalCount = upperBodyCount + lowerBodyCount
+            
+            if weeklyGroups[weekStart] != nil {
+                weeklyGroups[weekStart]?.append(totalCount)
+            } else {
+                weeklyGroups[weekStart] = [totalCount]
+            }
+        }
+        
+        // Calculate weekly averages
+        return allWeekStarts.map { weekStart in
+            let counts = weeklyGroups[weekStart] ?? []
+            let sum = counts.reduce(0, +)
+            let average = counts.isEmpty ? 0.0 : Double(sum) / Double(counts.count)
+            return WeeklyData(weekStart: weekStart, averageCount: average)
+        }.sorted { $0.weekStart < $1.weekStart }
+    }
+    
+    private var chartContent: some View {
+        Chart(weeklyAverages) { weekData in
+            LineMark(
+                x: .value("Week", weekData.weekStart),
+                y: .value("Average Count", max(0.1, weekData.averageCount))
+            )
+            .interpolationMethod(.catmullRom)
+            
+            PointMark(
+                x: .value("Week", weekData.weekStart),
+                y: .value("Average Count", max(0.1, weekData.averageCount))
+            )
+            
+            RuleMark(
+                x: .value("Week", weekData.weekStart),
+                yStart: .value("Start", max(0.1, weekData.averageCount)),
+                yEnd: .value("End", max(0.1, weekData.averageCount))
+            )
+            .annotation(position: .top) {
+                Text(String(format: "%.1f", weekData.averageCount))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading)
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .weekOfYear)) { value in
+                if let date = value.as(Date.self) {
+                    AxisValueLabel {
+                        Text(date.formatted(.dateTime.month().day()))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+    }
+
+    private var chartView: some View {
+        chartContent
+            .frame(height: 200)
+            .padding()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Weekly Trend")
+                .font(.headline)
+                .padding(.horizontal)
+            
+            if weeklyAverages.isEmpty {
+                Text("No data for the last 6 weeks")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding()
+            } else {
+                chartView}
+        }
+        .background(Color.gray.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+#Preview {
+    ContentView()
+        .modelContainer(for: DiaryEntry.self, inMemory: true)
+}

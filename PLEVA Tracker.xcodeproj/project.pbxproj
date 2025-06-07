@@ -1,0 +1,630 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E75AEFBC2DF3F78000F8EEC4 /* OpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75AEFBB2DF3F78000F8EEC4 /* OpenAIService.swift */; };
+		E75AEFC32DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E75AEFC12DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.plist */; };
+		E75AEFC42DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.template.plist in Resources */ = {isa = PBXBuildFile; fileRef = E75AEFC22DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.template.plist */; };
+		E7EFA5D32D9640000093B489 /* PLEVA_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5D22D9640000093B489 /* PLEVA_TrackerApp.swift */; };
+		E7EFA5D52D9640000093B489 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5D42D9640000093B489 /* ContentView.swift */; };
+		E7EFA5D72D9640000093B489 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5D62D9640000093B489 /* Item.swift */; };
+		E7EFA5D92D9640030093B489 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7EFA5D82D9640030093B489 /* Assets.xcassets */; };
+		E7EFA5DC2D9640030093B489 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7EFA5DB2D9640030093B489 /* Preview Assets.xcassets */; };
+		E7EFA5E72D9640030093B489 /* PLEVA_TrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5E62D9640030093B489 /* PLEVA_TrackerTests.swift */; };
+		E7EFA5F12D9640030093B489 /* PLEVA_TrackerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5F02D9640030093B489 /* PLEVA_TrackerUITests.swift */; };
+		E7EFA5F32D9640030093B489 /* PLEVA_TrackerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EFA5F22D9640030093B489 /* PLEVA_TrackerUITestsLaunchTests.swift */; };
+		E7EFA60B2D96488B0093B489 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = E7EFA60A2D96488B0093B489 /* CHANGELOG.md */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E7EFA5E32D9640030093B489 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E7EFA5C72D9640000093B489 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E7EFA5CE2D9640000093B489;
+			remoteInfo = "PLEVA Tracker";
+		};
+		E7EFA5ED2D9640030093B489 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E7EFA5C72D9640000093B489 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E7EFA5CE2D9640000093B489;
+			remoteInfo = "PLEVA Tracker";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		E75AEFBB2DF3F78000F8EEC4 /* OpenAIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OpenAIService.swift; sourceTree = "<group>"; };
+		E75AEFC12DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "PLEVA-Tracker-Info.plist"; sourceTree = "<group>"; };
+		E75AEFC22DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.template.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "PLEVA-Tracker-Info.template.plist"; sourceTree = "<group>"; };
+		E7EFA5CF2D9640000093B489 /* PLEVA Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PLEVA Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7EFA5D22D9640000093B489 /* PLEVA_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PLEVA_TrackerApp.swift; sourceTree = "<group>"; };
+		E7EFA5D42D9640000093B489 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E7EFA5D62D9640000093B489 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		E7EFA5D82D9640030093B489 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E7EFA5DB2D9640030093B489 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		E7EFA5DD2D9640030093B489 /* PLEVA_Tracker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PLEVA_Tracker.entitlements; sourceTree = "<group>"; };
+		E7EFA5E22D9640030093B489 /* PLEVA TrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "PLEVA TrackerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7EFA5E62D9640030093B489 /* PLEVA_TrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PLEVA_TrackerTests.swift; sourceTree = "<group>"; };
+		E7EFA5EC2D9640030093B489 /* PLEVA TrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "PLEVA TrackerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7EFA5F02D9640030093B489 /* PLEVA_TrackerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PLEVA_TrackerUITests.swift; sourceTree = "<group>"; };
+		E7EFA5F22D9640030093B489 /* PLEVA_TrackerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PLEVA_TrackerUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		E7EFA60A2D96488B0093B489 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E7EFA5CC2D9640000093B489 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5DF2D9640030093B489 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5E92D9640030093B489 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E7EFA5C62D9640000093B489 = {
+			isa = PBXGroup;
+			children = (
+				E75AEFC12DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.plist */,
+				E75AEFC22DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.template.plist */,
+				E7EFA60A2D96488B0093B489 /* CHANGELOG.md */,
+				E7EFA5D12D9640000093B489 /* PLEVA Tracker */,
+				E7EFA5E52D9640030093B489 /* PLEVA TrackerTests */,
+				E7EFA5EF2D9640030093B489 /* PLEVA TrackerUITests */,
+				E7EFA5D02D9640000093B489 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E7EFA5D02D9640000093B489 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E7EFA5CF2D9640000093B489 /* PLEVA Tracker.app */,
+				E7EFA5E22D9640030093B489 /* PLEVA TrackerTests.xctest */,
+				E7EFA5EC2D9640030093B489 /* PLEVA TrackerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E7EFA5D12D9640000093B489 /* PLEVA Tracker */ = {
+			isa = PBXGroup;
+			children = (
+				E75AEFBB2DF3F78000F8EEC4 /* OpenAIService.swift */,
+				E7EFA5D22D9640000093B489 /* PLEVA_TrackerApp.swift */,
+				E7EFA5D42D9640000093B489 /* ContentView.swift */,
+				E7EFA5D62D9640000093B489 /* Item.swift */,
+				E7EFA5D82D9640030093B489 /* Assets.xcassets */,
+				E7EFA5DD2D9640030093B489 /* PLEVA_Tracker.entitlements */,
+				E7EFA5DA2D9640030093B489 /* Preview Content */,
+			);
+			path = "PLEVA Tracker";
+			sourceTree = "<group>";
+		};
+		E7EFA5DA2D9640030093B489 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				E7EFA5DB2D9640030093B489 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		E7EFA5E52D9640030093B489 /* PLEVA TrackerTests */ = {
+			isa = PBXGroup;
+			children = (
+				E7EFA5E62D9640030093B489 /* PLEVA_TrackerTests.swift */,
+			);
+			path = "PLEVA TrackerTests";
+			sourceTree = "<group>";
+		};
+		E7EFA5EF2D9640030093B489 /* PLEVA TrackerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E7EFA5F02D9640030093B489 /* PLEVA_TrackerUITests.swift */,
+				E7EFA5F22D9640030093B489 /* PLEVA_TrackerUITestsLaunchTests.swift */,
+			);
+			path = "PLEVA TrackerUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E7EFA5CE2D9640000093B489 /* PLEVA Tracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E7EFA5F62D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA Tracker" */;
+			buildPhases = (
+				E7EFA5CB2D9640000093B489 /* Sources */,
+				E7EFA5CC2D9640000093B489 /* Frameworks */,
+				E7EFA5CD2D9640000093B489 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "PLEVA Tracker";
+			productName = "PLEVA Tracker";
+			productReference = E7EFA5CF2D9640000093B489 /* PLEVA Tracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E7EFA5E12D9640030093B489 /* PLEVA TrackerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E7EFA5F92D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA TrackerTests" */;
+			buildPhases = (
+				E7EFA5DE2D9640030093B489 /* Sources */,
+				E7EFA5DF2D9640030093B489 /* Frameworks */,
+				E7EFA5E02D9640030093B489 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E7EFA5E42D9640030093B489 /* PBXTargetDependency */,
+			);
+			name = "PLEVA TrackerTests";
+			productName = "PLEVA TrackerTests";
+			productReference = E7EFA5E22D9640030093B489 /* PLEVA TrackerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E7EFA5EB2D9640030093B489 /* PLEVA TrackerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E7EFA5FC2D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA TrackerUITests" */;
+			buildPhases = (
+				E7EFA5E82D9640030093B489 /* Sources */,
+				E7EFA5E92D9640030093B489 /* Frameworks */,
+				E7EFA5EA2D9640030093B489 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E7EFA5EE2D9640030093B489 /* PBXTargetDependency */,
+			);
+			name = "PLEVA TrackerUITests";
+			productName = "PLEVA TrackerUITests";
+			productReference = E7EFA5EC2D9640030093B489 /* PLEVA TrackerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E7EFA5C72D9640000093B489 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+				TargetAttributes = {
+					E7EFA5CE2D9640000093B489 = {
+						CreatedOnToolsVersion = 15.2;
+					};
+					E7EFA5E12D9640030093B489 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = E7EFA5CE2D9640000093B489;
+					};
+					E7EFA5EB2D9640030093B489 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = E7EFA5CE2D9640000093B489;
+					};
+				};
+			};
+			buildConfigurationList = E7EFA5CA2D9640000093B489 /* Build configuration list for PBXProject "PLEVA Tracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E7EFA5C62D9640000093B489;
+			productRefGroup = E7EFA5D02D9640000093B489 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E7EFA5CE2D9640000093B489 /* PLEVA Tracker */,
+				E7EFA5E12D9640030093B489 /* PLEVA TrackerTests */,
+				E7EFA5EB2D9640030093B489 /* PLEVA TrackerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E7EFA5CD2D9640000093B489 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E75AEFC32DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.plist in Resources */,
+				E7EFA5DC2D9640030093B489 /* Preview Assets.xcassets in Resources */,
+				E7EFA60B2D96488B0093B489 /* CHANGELOG.md in Resources */,
+				E75AEFC42DF3FA6400F8EEC4 /* PLEVA-Tracker-Info.template.plist in Resources */,
+				E7EFA5D92D9640030093B489 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5E02D9640030093B489 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5EA2D9640030093B489 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E7EFA5CB2D9640000093B489 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E7EFA5D52D9640000093B489 /* ContentView.swift in Sources */,
+				E7EFA5D72D9640000093B489 /* Item.swift in Sources */,
+				E75AEFBC2DF3F78000F8EEC4 /* OpenAIService.swift in Sources */,
+				E7EFA5D32D9640000093B489 /* PLEVA_TrackerApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5DE2D9640030093B489 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E7EFA5E72D9640030093B489 /* PLEVA_TrackerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7EFA5E82D9640030093B489 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E7EFA5F32D9640030093B489 /* PLEVA_TrackerUITestsLaunchTests.swift in Sources */,
+				E7EFA5F12D9640030093B489 /* PLEVA_TrackerUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E7EFA5E42D9640030093B489 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E7EFA5CE2D9640000093B489 /* PLEVA Tracker */;
+			targetProxy = E7EFA5E32D9640030093B489 /* PBXContainerItemProxy */;
+		};
+		E7EFA5EE2D9640030093B489 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E7EFA5CE2D9640000093B489 /* PLEVA Tracker */;
+			targetProxy = E7EFA5ED2D9640030093B489 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E7EFA5F42D9640030093B489 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = Default;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.7;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E7EFA5F52D9640030093B489 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = Default;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.7;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		E7EFA5F72D9640030093B489 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "PLEVA Tracker/PLEVA_Tracker.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"PLEVA Tracker/Preview Content\"";
+				DEVELOPMENT_TEAM = HDTY479X59;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PLEVA-Tracker-Info.plist";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to save and track PLEVA progress photos.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-Tracker";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E7EFA5F82D9640030093B489 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "PLEVA Tracker/PLEVA_Tracker.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"PLEVA Tracker/Preview Content\"";
+				DEVELOPMENT_TEAM = HDTY479X59;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PLEVA-Tracker-Info.plist";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to save and track PLEVA progress photos.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-Tracker";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E7EFA5FA2D9640030093B489 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HDTY479X59;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-TrackerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PLEVA Tracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PLEVA Tracker";
+			};
+			name = Debug;
+		};
+		E7EFA5FB2D9640030093B489 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HDTY479X59;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-TrackerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PLEVA Tracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PLEVA Tracker";
+			};
+			name = Release;
+		};
+		E7EFA5FD2D9640030093B489 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HDTY479X59;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-TrackerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "PLEVA Tracker";
+			};
+			name = Debug;
+		};
+		E7EFA5FE2D9640030093B489 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HDTY479X59;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "renscorp.PLEVA-TrackerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = "PLEVA Tracker";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E7EFA5CA2D9640000093B489 /* Build configuration list for PBXProject "PLEVA Tracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E7EFA5F42D9640030093B489 /* Debug */,
+				E7EFA5F52D9640030093B489 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E7EFA5F62D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA Tracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E7EFA5F72D9640030093B489 /* Debug */,
+				E7EFA5F82D9640030093B489 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E7EFA5F92D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA TrackerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E7EFA5FA2D9640030093B489 /* Debug */,
+				E7EFA5FB2D9640030093B489 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E7EFA5FC2D9640030093B489 /* Build configuration list for PBXNativeTarget "PLEVA TrackerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E7EFA5FD2D9640030093B489 /* Debug */,
+				E7EFA5FE2D9640030093B489 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E7EFA5C72D9640000093B489 /* Project object */;
+}
