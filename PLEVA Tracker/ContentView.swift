@@ -1,7 +1,104 @@
+#if !os(macOS)
+import UIKit
+#endif
 import SwiftUI
 import SwiftData
 import PhotosUI
-import Charts  // Add Charts import
+import Charts
+import UniformTypeIdentifiers
+
+// MARK: - Types and Constants
+private let plevaType = UTType("com.pleva-tracker.diary-entries")!
+
+// MARK: - File Document Structure
+struct JSONFile: FileDocument {
+    static var readableContentTypes: [UTType] { [UTType("com.pleva-tracker.diary-entries")!] }
+    
+    var text: String
+    
+    init(initialText: String? = nil) {
+        text = initialText ?? ""
+    }
+    
+    init(configuration: ReadConfiguration) throws {
+        if let data = configuration.file.regularFileContents {
+            text = String(decoding: data, as: UTF8.self)
+        } else {
+            text = ""
+        }
+    }
+    
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let data = Data(text.utf8)
+        return FileWrapper(regularFileWithContents: data)
+    }
+}
+
+// MARK: - Export/Import Structures
+struct ExportData: Codable {
+    let version: Int
+    let exportDate: Date
+    let entries: [DiaryEntryExport]
+}
+
+struct DiaryEntryExport: Codable {
+    let timestamp: Date
+    let notes: String
+    let severity: Int
+    let location: String
+    let weeklySummary: String?
+    let summaryDate: Date?
+    let papulesFace: Int
+    let papulesNeck: Int
+    let papulesChest: Int
+    let papulesLeftArm: Int
+    let papulesRightArm: Int
+    let papulesBack: Int
+    let papulesButtocks: Int
+    let papulesLeftLeg: Int
+    let papulesRightLeg: Int
+    let photos: [Data]
+    
+    init(from entry: DiaryEntry) {
+        self.timestamp = entry.timestamp
+        self.notes = entry.notes
+        self.severity = entry.severity
+        self.location = entry.location
+        self.weeklySummary = entry.weeklySummary
+        self.summaryDate = entry.summaryDate
+        self.papulesFace = entry.papulesFace
+        self.papulesNeck = entry.papulesNeck
+        self.papulesChest = entry.papulesChest
+        self.papulesLeftArm = entry.papulesLeftArm
+        self.papulesRightArm = entry.papulesRightArm
+        self.papulesBack = entry.papulesBack
+        self.papulesButtocks = entry.papulesButtocks
+        self.papulesLeftLeg = entry.papulesLeftLeg
+        self.papulesRightLeg = entry.papulesRightLeg
+        self.photos = entry.photos
+    }
+    
+    func toDiaryEntry() -> DiaryEntry {
+        return DiaryEntry(
+            timestamp: self.timestamp,
+            notes: self.notes,
+            severity: self.severity,
+            photos: self.photos,
+            location: self.location,
+            weeklySummary: self.weeklySummary,
+            summaryDate: self.summaryDate,
+            papulesFace: self.papulesFace,
+            papulesNeck: self.papulesNeck,
+            papulesChest: self.papulesChest,
+            papulesLeftArm: self.papulesLeftArm,
+            papulesRightArm: self.papulesRightArm,
+            papulesBack: self.papulesBack,
+            papulesButtocks: self.papulesButtocks,
+            papulesLeftLeg: self.papulesLeftLeg,
+            papulesRightLeg: self.papulesRightLeg
+        )
+    }
+}
 
 struct WeekDayView: View {
     let date: Date
@@ -145,6 +242,386 @@ struct WeekView: View {
     }
 }
 
+// MARK: - Settings View
+struct SettingsView: View {
+    // MARK: - Properties
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query private var entries: [DiaryEntry]
+    @State private var isTestingConnection = false
+    @State private var testResult: String = "Not tested"
+    @State private var showingExportSheet = false
+    @State private var showingImportPicker = false
+    @State private var importError: String?
+    @State private var showingImportError = false
+    @State private var isProcessing = false
+    private let openAIService = OpenAIService()
+    
+    // MARK: - Computed Properties
+    private var plistContents: [String: String] {
+        let bundle = Bundle.main
+        let keys = ["AZURE_OPENAI_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_DEPLOYMENT"]
+        var contents: [String: String] = [:]
+        
+        for key in keys {
+            if let value = bundle.object(forInfoDictionaryKey: key) as? String {
+                // Mask sensitive data
+                if key == "AZURE_OPENAI_KEY" {
+                    let masked = String(value.prefix(8)) + "..." + String(value.suffix(4))
+                    contents[key] = masked
+                } else {
+                    contents[key] = value
+                }
+            }
+        }
+        
+        return contents
+    }
+
+    // MARK: - Methods
+    private func exportEntries() {
+        isProcessing = true
+        
+        Task {
+            do {
+                // Get unique entries by timestamp
+                var uniqueEntries: [DiaryEntry] = []
+                var seenTimestamps = Set<Date>()
+                
+                for entry in entries {
+                    if !seenTimestamps.contains(entry.timestamp) {
+                        uniqueEntries.append(entry)
+                        seenTimestamps.insert(entry.timestamp)
+                    }
+                }
+                
+                // Convert unique entries to exportable format
+                let exportEntries = uniqueEntries.map { DiaryEntryExport(from: $0) }
+                
+                let exportData = ExportData(
+                    version: 1,
+                    exportDate: Date(),
+                    entries: exportEntries
+                )
+                
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                encoder.outputFormatting = .prettyPrinted
+                let data = try encoder.encode(exportData)
+                
+                // Create a temporary file
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("PLEVA-Tracker-Export")
+                    .appendingPathExtension("plevadiary")
+                
+                try data.write(to: tempURL)
+                let totalPhotos = entries.reduce(0) { $0 + $1.photos.count }
+                print("Export successful: \(entries.count) entries with \(totalPhotos) photos")
+                
+                await MainActor.run {
+                    showingExportSheet = true
+                    isProcessing = false
+                    testResult = "Successfully exported \(entries.count) entries with \(totalPhotos) photos"
+                }
+            } catch {
+                print("Export error: \(error)")
+                await MainActor.run {
+                    isProcessing = false
+                    testResult = "Export failed: \(error.localizedDescription)"
+                    showingImportError = true
+                    importError = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    private func importEntries(from url: URL) {
+        isProcessing = true
+        
+        Task {
+            do {
+                // Request file access permission
+                guard url.startAccessingSecurityScopedResource() else {
+                    throw NSError(domain: "com.pleva-tracker", 
+                                code: 1, 
+                                userInfo: [NSLocalizedDescriptionKey: "Permission denied to access file"])
+                }
+                
+                defer {
+                    // Ensure we release the security-scoped resource access
+                    url.stopAccessingSecurityScopedResource()
+                }
+                
+                let data = try Data(contentsOf: url)
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                
+                let importData = try decoder.decode(ExportData.self, from: data)
+                
+                // Get existing entries timestamps for duplicate checking
+                let existingTimestamps = Set(entries.map { $0.timestamp })
+                var importedCount = 0
+                var duplicateCount = 0
+                
+                // Convert and import entries, skipping duplicates
+                for exportEntry in importData.entries {
+                    if !existingTimestamps.contains(exportEntry.timestamp) {
+                        let entry = exportEntry.toDiaryEntry()
+                        modelContext.insert(entry)
+                        importedCount += 1
+                    } else {
+                        duplicateCount += 1
+                    }
+                }
+            
+                try modelContext.save()
+            
+                // Show success message with entry and photo counts
+                let totalPhotos = importData.entries.reduce(0) { $0 + $1.photos.count }
+                let statusMessage = "Imported \(importedCount) new entries" + 
+                                  (duplicateCount > 0 ? " (skipped \(duplicateCount) duplicates)" : "")
+                await MainActor.run {
+                    testResult = statusMessage
+                    isProcessing = false
+                }
+                print("\(statusMessage) with \(totalPhotos) photos")
+            } catch {
+                await MainActor.run {
+                    importError = error.localizedDescription
+                    showingImportError = true
+                    isProcessing = false
+                    testResult = "Import failed: \(error.localizedDescription)"
+                }
+                print("Import error: \(error)")
+            }
+        }
+    }
+    
+    private func testConnection() {
+        isTestingConnection = true
+        testResult = "Testing..."
+        
+        Task {
+            do {
+                try await openAIService.testConnection()
+                await MainActor.run {
+                    testResult = "Connection successful"
+                }
+            } catch {
+                await MainActor.run {
+                    testResult = "Connection failed: \(error.localizedDescription)"
+                }
+            }
+            
+            await MainActor.run {
+                isTestingConnection = false
+            }
+        }
+    }
+
+    // MARK: - Body
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Data Management") {
+                    Button(action: exportEntries) {
+                        HStack {
+                            Label("Export All Entries", systemImage: "square.and.arrow.up")
+                            if isProcessing {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(isProcessing)
+                    
+                    Button(action: { showingImportPicker = true }) {
+                        HStack {
+                            Label("Import Entries", systemImage: "square.and.arrow.down")
+                            if isProcessing {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(isProcessing)
+                    
+                    if !testResult.isEmpty && testResult != "Not tested" && !testResult.contains("Connection") {
+                        Text(testResult)
+                            .foregroundStyle(
+                                testResult.starts(with: "Successfully") ? .green : .red
+                            )
+                    }
+                    
+                    if let error = importError {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+                
+                Section("Azure OpenAI Configuration") {
+                    VStack(spacing: 8) {
+                        Button(action: testConnection) {
+                            HStack {
+                                Text("Test Connection")
+                                if isTestingConnection {
+                                    Spacer()
+                                    ProgressView()
+                                }
+                            }
+                        }
+                        .disabled(isTestingConnection)
+                        
+                        if testResult.contains("Connection") {
+                            Text(testResult)
+                                .foregroundStyle(
+                                    testResult == "Connection successful" ? .green :
+                                    testResult == "Testing..." ? .secondary : .red
+                                )
+                        }
+                    }
+                }
+                
+                Section("Changelog") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Group {
+                            Text("Version 1.0.1")
+                                .font(.headline)
+                            
+                            Text("March 24, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("New Features:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Detailed papule count tracking by body region",
+                                        "Total papule count in entry list",
+                                        "Keyboard-optimized numeric inputs"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.bottom, 16)
+                        
+                        Group {
+                            Text("Version 1.0.0")
+                                .font(.headline)
+                            
+                            Text("Initial Release - March 7, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Initial Features:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Weekly calendar view",
+                                        "Entry creation and editing",
+                                        "Photo attachments",
+                                        "Severity tracking (1-5)",
+                                        "Weekly AI summaries",
+                                        "Location tracking"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                    }
+                }
+                
+                Section("Configuration Values") {
+                    ForEach(Array(plistContents.keys.sorted()), id: \.self) { key in
+                        if let value = plistContents[key] {
+                            VStack(alignment: .leading) {
+                                Text(key)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(value)
+                                    .font(.callout)
+                            }
+                        }
+                    }
+                }
+                
+                Section("About") {
+                    Text("PLEVA Diary")
+                        .foregroundStyle(.secondary)
+                    Text("Version 1.0")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .fileExporter(
+                isPresented: $showingExportSheet,
+                document: JSONFile(
+                    initialText: try? String(
+                        contentsOf: FileManager.default.temporaryDirectory
+                            .appendingPathComponent("PLEVA-Tracker-Export")
+                            .appendingPathExtension("plevadiary")
+                    )
+                ),
+                contentType: plevaType,
+                defaultFilename: "PLEVA-Tracker-Export-\(Date().formatted(.iso8601))"
+            ) { result in
+                if case .failure(let error) = result {
+                    print("Export error: \(error)")
+                }
+            }
+            .fileImporter(
+                isPresented: $showingImportPicker,
+                allowedContentTypes: [plevaType],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    if let url = urls.first {
+                        importEntries(from: url)
+                    }
+                case .failure(let error):
+                    importError = error.localizedDescription
+                    showingImportError = true
+                }
+            }
+            .alert("Import Error", isPresented: $showingImportError, actions: {
+                Button("OK", role: .cancel) { }
+            }, message: {
+                Text(importError ?? "Unknown error")
+            })
+        }
+    }
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DiaryEntry.timestamp, order: .reverse) private var entries: [DiaryEntry]
@@ -177,6 +654,7 @@ struct ContentView: View {
     
     private func handleDaySelected(_ date: Date) {
         selectedDate = date
+        // Look for an entry on the exact date
         selectedEntry = entries.first { Calendar.current.isDate($0.timestamp, inSameDayAs: date) }
         showingEntrySheet = true
     }
@@ -229,7 +707,8 @@ struct ContentView: View {
                     EntryRowView(entry: entry)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .onTapGesture {
-                            selectedEntry = entry
+                            selectedDate = entry.timestamp // Use the tapped entry's timestamp
+                            selectedEntry = entry // Directly use the tapped entry
                             showingEntrySheet = true
                         }
                 }
@@ -376,6 +855,30 @@ struct WeeklySummaryView: View {
     }
 }
 
+struct SeverityBadgeView: View {
+    let severity: Int
+    
+    var color: Color {
+        switch severity {
+        case 1: return .green
+        case 2: return .mint
+        case 3: return .yellow
+        case 4: return .orange
+        case 5: return .red
+        default: return .gray
+        }
+    }
+    
+    var body: some View {
+        Text("\(severity)")
+            .font(.caption.bold())
+            .padding(6)
+            .background(color.opacity(0.2))
+            .foregroundStyle(color)
+            .clipShape(Circle())
+    }
+}
+
 struct EntryRowView: View {
     let entry: DiaryEntry
     
@@ -473,15 +976,26 @@ struct EntryFormView: View {
     @State private var papulesButtocks: Int = 0
     @State private var papulesLeftLeg: Int = 0
     @State private var papulesRightLeg: Int = 0
+    @State private var entryDate: Date
     @FocusState private var focusedField: String?
     
     init(entry: DiaryEntry?, selectedDate: Date) {
         self.entry = entry
         self.selectedDate = selectedDate
+        // Initialize the date state with either the entry's timestamp or selected date
+        _entryDate = State(initialValue: entry?.timestamp ?? selectedDate)
     }
     
     var body: some View {
         Form {
+            Section("Date and Time") {
+                DatePicker(
+                    "Entry Date",
+                    selection: $entryDate,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+            }
+            
             Section("Notes") {
                 TextEditor(text: $notes)
                     .frame(height: 100)
@@ -594,9 +1108,10 @@ struct EntryFormView: View {
         }
     }
     
-    private func saveEntry() {
+    func saveEntry() {
         if let entry = entry {
             // Update existing entry
+            entry.timestamp = entryDate
             entry.notes = notes
             entry.severity = severity
             entry.location = location
@@ -611,20 +1126,8 @@ struct EntryFormView: View {
             entry.papulesLeftLeg = papulesLeftLeg
             entry.papulesRightLeg = papulesRightLeg
         } else {
-            // Create new entry with the selected date
-            let calendar = Calendar.current
-            let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
-            let currentTime = calendar.dateComponents([.hour, .minute], from: Date())
-            
-            // Combine the selected date with current time
-            var combinedComponents = DateComponents()
-            combinedComponents.year = selectedComponents.year
-            combinedComponents.month = selectedComponents.month
-            combinedComponents.day = selectedComponents.day
-            combinedComponents.hour = currentTime.hour
-            combinedComponents.minute = currentTime.minute
-            
-            let timestamp = calendar.date(from: combinedComponents) ?? selectedDate
+            // Create new entry using the date picker's selected date and time
+            let timestamp = entryDate
             
             let newEntry = DiaryEntry(
                 timestamp: timestamp,
@@ -644,30 +1147,6 @@ struct EntryFormView: View {
             )
             modelContext.insert(newEntry)
         }
-    }
-}
-
-struct SeverityBadgeView: View {
-    let severity: Int
-    
-    var color: Color {
-        switch severity {
-        case 1: return .green
-        case 2: return .mint
-        case 3: return .yellow
-        case 4: return .orange
-        case 5: return .red
-        default: return .gray
-        }
-    }
-    
-    var body: some View {
-        Text("\(severity)")
-            .font(.caption.bold())
-            .padding(6)
-            .background(color.opacity(0.2))
-            .foregroundStyle(color)
-            .clipShape(Circle())
     }
 }
 
@@ -699,325 +1178,6 @@ struct PapuleCountView: View {
                 .focused(focusedField, equals: id)
                 .tag(id)
         }
-    }
-}
-
-struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var isTestingConnection = false
-    @State private var testResult: String = "Not tested"
-    private let openAIService = OpenAIService()
-    
-    private var plistContents: [String: String] {
-        let bundle = Bundle.main
-        let keys = ["AZURE_OPENAI_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_DEPLOYMENT"]
-        var contents: [String: String] = [:]
-        
-        for key in keys {
-            if let value = bundle.object(forInfoDictionaryKey: key) as? String {
-                // Mask sensitive data
-                if key == "AZURE_OPENAI_KEY" {
-                    let masked = String(value.prefix(8)) + "..." + String(value.suffix(4))
-                    contents[key] = masked
-                } else {
-                    contents[key] = value
-                }
-            }
-        }
-        
-        return contents
-    }
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Azure OpenAI Configuration") {
-                    Button(action: testConnection) {
-                        HStack {
-                            Text("Test Connection")
-                            if isTestingConnection {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(isTestingConnection)
-                    
-                    Text(testResult)
-                        .foregroundStyle(
-                            testResult == "Connection successful" ? .green :
-                            testResult == "Not tested" ? .gray : .red
-                        )
-                }
-                    
-                Section("Changelog") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Group {
-                            Text("Version 1.0.1")
-                                .font(.headline)
-                            
-                            Text("March 24, 2025")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("New Features:")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    ForEach([
-                                        "Detailed papule count tracking by body region",
-                                        "Total papule count in entry list",
-                                        "Keyboard-optimized numeric inputs"
-                                    ], id: \.self) { feature in
-                                        HStack(alignment: .top, spacing: 4) {
-                                            Text("•")
-                                            Text(feature)
-                                        }
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    }
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                        .padding(.bottom, 16)
-                        
-                        Group {
-                            Text("Version 1.0.0")
-                                .font(.headline)
-                            
-                            Text("Initial Release - March 7, 2025")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Initial Features:")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    ForEach([
-                                        "Weekly calendar view",
-                                        "Entry creation and editing",
-                                        "Photo attachments",
-                                        "Severity tracking (1-5)",
-                                        "Weekly AI summaries",
-                                        "Location tracking"
-                                    ], id: \.self) { feature in
-                                        HStack(alignment: .top, spacing: 4) {
-                                            Text("•")
-                                            Text(feature)
-                                        }
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    }
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                    }
-                }
-                
-                Section("Configuration Values") {
-                    ForEach(Array(plistContents.keys.sorted()), id: \.self) { key in
-                        if let value = plistContents[key] {
-                            VStack(alignment: .leading) {
-                                Text(key)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(value)
-                                    .font(.callout)
-                            }
-                        }
-                    }
-                }
-                
-                Section("About") {
-                    Text("PLEVA Diary")
-                        .foregroundStyle(.secondary)
-                    Text("Version 1.0")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func testConnection() {
-        isTestingConnection = true
-        testResult = "Testing..."
-        
-        Task {
-            do {
-                let success = try await openAIService.testConnection()
-                await MainActor.run {
-                    testResult = success ? "Connection successful" : "Connection failed"
-                    isTestingConnection = false
-                }
-            } catch OpenAIError.invalidAPIKey {
-                await MainActor.run {
-                    testResult = "Invalid API Key"
-                    isTestingConnection = false
-                }
-            } catch OpenAIError.invalidEndpoint {
-                await MainActor.run {
-                    testResult = "Invalid Endpoint"
-                    isTestingConnection = false
-                }
-            } catch {
-                await MainActor.run {
-                    testResult = "Error: \(error.localizedDescription)"
-                    isTestingConnection = false
-                }
-            }
-        }
-    }
-}
-
-struct WeeklyTrendChart: View {
-    let entries: [DiaryEntry]
-    
-    private struct WeeklyData: Identifiable {
-        let weekStart: Date
-        let averageCount: Double
-        var id: Date { weekStart }
-    }
-    
-    private var weeklyAverages: [WeeklyData] {
-        let calendar = Calendar.current
-        let today = Date()
-        let sixWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -6, to: today) ?? today
-        
-        // Create an array of all week starts
-        var allWeekStarts: [Date] = []
-        var currentDate = sixWeeksAgo
-        
-        while currentDate <= today {
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
-            let alreadyExists = allWeekStarts.contains {
-                calendar.isDate($0, equalTo: weekStart, toGranularity: .weekOfYear)
-            }
-            if !alreadyExists {
-                allWeekStarts.append(weekStart)
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        // Group entries by week
-        var weeklyGroups: [Date: [Int]] = [:]
-        
-        // Initialize all weeks with empty arrays
-        for weekStart in allWeekStarts {
-            weeklyGroups[weekStart] = []
-        }
-        
-        // Process entries and group them by week
-        for entry in entries {
-            guard entry.timestamp >= sixWeeksAgo else { continue }
-            
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: entry.timestamp)) ?? entry.timestamp
-            
-            // Calculate total papules for different body regions
-            let upperBodyCount = entry.papulesFace +
-                               entry.papulesNeck +
-                               entry.papulesChest +
-                               entry.papulesLeftArm +
-                               entry.papulesRightArm +
-                               entry.papulesBack
-            
-            let lowerBodyCount = entry.papulesButtocks +
-                               entry.papulesLeftLeg +
-                               entry.papulesRightLeg
-            
-            let totalCount = upperBodyCount + lowerBodyCount
-            
-            if weeklyGroups[weekStart] != nil {
-                weeklyGroups[weekStart]?.append(totalCount)
-            } else {
-                weeklyGroups[weekStart] = [totalCount]
-            }
-        }
-        
-        // Calculate weekly averages
-        return allWeekStarts.map { weekStart in
-            let counts = weeklyGroups[weekStart] ?? []
-            let sum = counts.reduce(0, +)
-            let average = counts.isEmpty ? 0.0 : Double(sum) / Double(counts.count)
-            return WeeklyData(weekStart: weekStart, averageCount: average)
-        }.sorted { $0.weekStart < $1.weekStart }
-    }
-    
-    private var chartContent: some View {
-        Chart(weeklyAverages) { weekData in
-            LineMark(
-                x: .value("Week", weekData.weekStart),
-                y: .value("Average Count", max(0.1, weekData.averageCount))
-            )
-            .interpolationMethod(.catmullRom)
-            
-            PointMark(
-                x: .value("Week", weekData.weekStart),
-                y: .value("Average Count", max(0.1, weekData.averageCount))
-            )
-            
-            RuleMark(
-                x: .value("Week", weekData.weekStart),
-                yStart: .value("Start", max(0.1, weekData.averageCount)),
-                yEnd: .value("End", max(0.1, weekData.averageCount))
-            )
-            .annotation(position: .top) {
-                Text(String(format: "%.1f", weekData.averageCount))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .weekOfYear)) { value in
-                if let date = value.as(Date.self) {
-                    AxisValueLabel {
-                        Text(date.formatted(.dateTime.month().day()))
-                            .font(.caption2)
-                    }
-                }
-            }
-        }
-    }
-
-    private var chartView: some View {
-        chartContent
-            .frame(height: 200)
-            .padding()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Weekly Trend")
-                .font(.headline)
-                .padding(.horizontal)
-            
-            if weeklyAverages.isEmpty {
-                Text("No data for the last 6 weeks")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding()
-            } else {
-                chartView}
-        }
-        .background(Color.gray.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
