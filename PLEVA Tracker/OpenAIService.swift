@@ -97,53 +97,42 @@ public class OpenAIService {
         return content
     }
     
-    public func testConnection() async throws -> Bool {
+    public func testConnection() async throws {
         guard !apiKey.isEmpty else { throw OpenAIError.invalidAPIKey }
         guard !endpoint.isEmpty else { throw OpenAIError.invalidEndpoint }
         
-        let requestBody: [String: Any] = [
-            "messages": [
-                ["role": "system", "content": "You are a test assistant."],
-                ["role": "user", "content": "Respond with 'OK' if you receive this message."]
-            ],
-            "temperature": 0.7,
-            "max_tokens": 50
-        ]
+        // Create a simple test prompt
+        let prompt = "Hello, this is a test message."
         
-        var url: URL
-        if useAzure {
-            url = URL(string: "\(endpoint)/openai/deployments/\(deploymentName)/chat/completions?api-version=2024-02-15-preview")!
-        } else {
-            url = URL(string: endpoint)!
-        }
-        
+        // Prepare the request
+        let url = URL(string: useAzure ? "\(endpoint)/openai/deployments/\(deploymentName)/chat/completions?api-version=2023-07-01-preview" : endpoint)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(useAzure ? "Bearer \(apiKey)" : "Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        if useAzure {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        } else {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let messages: [[String: String]] = [
+            ["role": "system", "content": "You are a helpful assistant."],
+            ["role": "user", "content": prompt]
+        ]
+        
+        let requestBody: [String: Any] = [
+            "messages": messages,
+            "max_tokens": 50,
+            "temperature": 0.7
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        // Make the request
+        let (_, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw OpenAIError.invalidResponse
         }
         
-        request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody)
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = json["choices"] as? [[String: Any]],
-                  let firstChoice = choices.first,
-                  let message = firstChoice["message"] as? [String: Any],
-                  let content = message["content"] as? String else {
-                throw OpenAIError.invalidResponse
-            }
-            
-            return content.lowercased().contains("ok")
-        } catch {
-            throw OpenAIError.networkError(error)
-        }
+        // If we get here, the connection was successful
     }
     
     private func formatEntriesForPrompt(_ entries: [DiaryEntry]) -> String {
