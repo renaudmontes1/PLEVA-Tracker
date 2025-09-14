@@ -487,6 +487,39 @@ struct SettingsView: View {
                 Section("Changelog") {
                     VStack(alignment: .leading, spacing: 8) {
                         Group {
+                            Text("Version 1.0.5")
+                                .font(.headline)
+                            
+                            Text("September 13, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Latest Updates:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Enhanced entry date/time editing",
+                                        "Improved import/export handling",
+                                        "Code optimization and cleanup",
+                                        "Fixed various UI issues"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.bottom, 16)
+                        
+                        Group {
                             Text("Version 1.0.1")
                                 .font(.headline)
                             
