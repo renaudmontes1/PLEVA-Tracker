@@ -1,57 +1,90 @@
 import SwiftUI
 import Charts
 
-struct WeeklyTrendChart: View {
-    let entries: [DiaryEntry]
+// Custom axis content
+private struct CustomDateLabel: View {
+    let date: Date
+    let timeRange: TimeRange
     
-    private struct WeeklyData: Identifiable {
-        let weekStart: Date
+    var body: some View {
+        let text = timeRange == .week || timeRange == .month ?
+            date.formatted(.dateTime.month().day()) :
+            date.formatted(.dateTime.month().year())
+        
+        Text(text)
+            .foregroundStyle(.secondary)
+            .font(.caption2)
+    }
+}
+
+struct TrendChart: View {
+    let entries: [DiaryEntry]
+    let timeRange: TimeRange
+    
+    private struct ChartData: Identifiable {
+        let date: Date
         let averageCount: Double
-        var id: Date { weekStart }
+        var id: Date { date }
     }
     
-    private var weeklyAverages: [WeeklyData] {
+    private var chartData: [ChartData] {
         let calendar = Calendar.current
         let today = Date()
-        let twelveWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -12, to: today) ?? today
+        let startDate = calendar.date(byAdding: .day, value: -timeRange.days, to: today) ?? today
         
-        print("WeeklyTrendChart: Total number of entries: \(entries.count)")
-        print("WeeklyTrendChart: Date range - From: \(twelveWeeksAgo.formatted()) To: \(today.formatted())")
+        print("TrendChart: Total number of entries: \(entries.count)")
+        print("TrendChart: Date range - From: \(startDate.formatted()) To: \(today.formatted())")
         
-        // Create an array of all week starts
-        var allWeekStarts: [Date] = []
-        var currentDate = twelveWeeksAgo
+        var datePeriods: [Date] = []
+        var currentDate = startDate
         
-        while currentDate <= today {
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
-            let alreadyExists = allWeekStarts.contains {
-                calendar.isDate($0, equalTo: weekStart, toGranularity: .weekOfYear)
-            }
-            if !alreadyExists {
-                allWeekStarts.append(weekStart)
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        // Create date periods based on the selected time range
+        let periodInterval: Calendar.Component
+        let periodValue: Int
+        
+        switch timeRange {
+        case .week:
+            periodInterval = .day
+            periodValue = 1
+        case .month:
+            periodInterval = .day
+            periodValue = 1
+        case .sixMonths:
+            periodInterval = .weekOfYear
+            periodValue = 1
+        case .year:
+            periodInterval = .month
+            periodValue = 1
         }
         
-        // Group entries by week
-        var weeklyGroups: [Date: [Int]] = [:]
+        while currentDate <= today {
+            datePeriods.append(currentDate)
+            currentDate = calendar.date(byAdding: periodInterval, value: periodValue, to: currentDate) ?? currentDate
+        }
         
-        // Initialize all weeks with empty arrays
-        for weekStart in allWeekStarts {
-            weeklyGroups[weekStart] = []
+        // Group entries by period
+        var periodGroups: [Date: [Int]] = [:]
+        
+        // Initialize all periods with empty arrays
+        for periodStart in datePeriods {
+            periodGroups[periodStart] = []
         }
         
         // Count entries within the time window
-        let entriesInTimeWindow = entries.filter { $0.timestamp >= twelveWeeksAgo }
-        print("WeeklyTrendChart: Entries in 12-week window: \(entriesInTimeWindow.count)")
+        let entriesInTimeWindow = entries.filter { $0.timestamp >= startDate }
+        print("TrendChart: Entries in time window: \(entriesInTimeWindow.count)")
         
-        // Process entries and group them by week
+        // Process entries and group them by period
         for entry in entries {
-            if entry.timestamp < twelveWeeksAgo {
-                print("WeeklyTrendChart: Skipping entry from \(entry.timestamp.formatted()) - outside time window")
+            if entry.timestamp < startDate {
+                print("TrendChart: Skipping entry from \(entry.timestamp.formatted()) - outside time window")
                 continue
             }
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: entry.timestamp)) ?? entry.timestamp
+            
+            // Find the appropriate period for this entry
+            let periodStart = datePeriods.last { date in
+                entry.timestamp >= date
+            } ?? startDate
             
             // Calculate total papules for different body regions
             let upperBodyCount = entry.papulesFace +
@@ -67,59 +100,67 @@ struct WeeklyTrendChart: View {
             
             let totalCount = upperBodyCount + lowerBodyCount
             
-            if weeklyGroups[weekStart] != nil {
-                weeklyGroups[weekStart]?.append(totalCount)
+            if periodGroups[periodStart] != nil {
+                periodGroups[periodStart]?.append(totalCount)
             } else {
-                weeklyGroups[weekStart] = [totalCount]
+                periodGroups[periodStart] = [totalCount]
             }
         }
         
-        // Calculate weekly averages
-        let weeklyData = allWeekStarts.map { weekStart in
-            let counts = weeklyGroups[weekStart] ?? []
+        // Calculate period averages
+        return datePeriods.map { periodStart in
+            let counts = periodGroups[periodStart] ?? []
             let sum = counts.reduce(0, +)
             let average = counts.isEmpty ? 0.0 : Double(sum) / Double(counts.count)
-            print("WeeklyTrendChart: Week of \(weekStart.formatted()): Count=\(counts.count), Average=\(average)")
-            return WeeklyData(weekStart: weekStart, averageCount: average)
-        }.sorted { $0.weekStart > $1.weekStart } // Sort in reverse chronological order
-        
-        print("WeeklyTrendChart: Generated \(weeklyData.count) weekly data points")
-        return weeklyData
+            print("TrendChart: Period of \(periodStart.formatted()): Count=\(counts.count), Average=\(average)")
+            return ChartData(date: periodStart, averageCount: average)
+        }.sorted { $0.date > $1.date } // Sort in reverse chronological order
     }
     
     private var chartContent: some View {
-        Chart(weeklyAverages) { weekData in
+        Chart(chartData) { data in
             LineMark(
-                x: .value("Week", weekData.weekStart),
-                y: .value("Average Count", max(0.1, weekData.averageCount))
+                x: .value("Date", data.date),
+                y: .value("Average Count", max(0.1, data.averageCount))
             )
+            .foregroundStyle(.blue)
             .interpolationMethod(.catmullRom)
             
             PointMark(
-                x: .value("Week", weekData.weekStart),
-                y: .value("Average Count", max(0.1, weekData.averageCount))
+                x: .value("Date", data.date),
+                y: .value("Average Count", max(0.1, data.averageCount))
             )
+            .foregroundStyle(.blue)
             
-            RuleMark(
-                x: .value("Week", weekData.weekStart),
-                yStart: .value("Start", max(0.1, weekData.averageCount)),
-                yEnd: .value("End", max(0.1, weekData.averageCount))
-            )
-            .annotation(position: .top) {
-                Text(String(format: "%.1f", weekData.averageCount))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            if data.averageCount > 0 {
+                RuleMark(
+                    x: .value("Date", data.date),
+                    yStart: .value("Start", max(0.1, data.averageCount)),
+                    yEnd: .value("End", max(0.1, data.averageCount))
+                )
+                .annotation(position: .top) {
+                    Text(String(format: "%.1f", data.averageCount))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .chartYAxis {
             AxisMarks(position: .leading)
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .weekOfYear)) { value in
+            let format = timeRange == .week || timeRange == .month ?
+                Date.FormatStyle().month().day() :
+                Date.FormatStyle().month().year()
+                
+            AxisMarks { value in
                 if let date = value.as(Date.self) {
+                    AxisGridLine()
+                    AxisTick()
                     AxisValueLabel {
-                        Text(date.formatted(.dateTime.month().day()))
+                        Text(date.formatted(format))
                             .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -129,7 +170,7 @@ struct WeeklyTrendChart: View {
     private var chartView: some View {
         ScrollView(.horizontal, showsIndicators: true) {
             chartContent
-                .frame(width: max(UIScreen.main.bounds.width, CGFloat(weeklyAverages.count) * 80))
+                .frame(width: max(UIScreen.main.bounds.width, CGFloat(chartData.count) * 80))
                 .frame(height: 200)
                 .padding()
         }
@@ -137,12 +178,12 @@ struct WeeklyTrendChart: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Weekly Papule Count Trends")
+            Text("\(timeRange.rawValue) Papule Count Trends")
                 .font(.headline)
                 .padding(.horizontal)
             
-            if weeklyAverages.isEmpty {
-                Text("No data for the last 12 weeks")
+            if chartData.isEmpty {
+                Text("No data for the selected time range")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding()
