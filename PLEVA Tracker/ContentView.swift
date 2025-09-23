@@ -7,6 +7,41 @@ import PhotosUI
 import Charts
 import UniformTypeIdentifiers
 
+// MARK: - Time Range Types
+enum TimeRange: String, CaseIterable {
+    case week = "W"
+    case month = "M"
+    case sixMonths = "6M"
+    case year = "Y"
+    
+    var days: Int {
+        switch self {
+        case .week: return 7
+        case .month: return 30
+        case .sixMonths: return 180
+        case .year: return 365
+        }
+    }
+    
+    var title: String { rawValue }
+}
+
+// MARK: - Time Range Control
+struct TimeRangeControl: View {
+    @Binding var selection: TimeRange
+    
+    var body: some View {
+        Picker("", selection: $selection) {
+            ForEach(TimeRange.allCases, id: \.self) { range in
+                Text(range.title)
+                    .tag(range)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+    }
+}
+
 // MARK: - Types and Constants
 private let plevaType = UTType("com.pleva-tracker.diary-entries")!
 
@@ -100,147 +135,7 @@ struct DiaryEntryExport: Codable {
     }
 }
 
-struct WeekDayView: View {
-    let date: Date
-    let hasEntry: Bool
-    let isSelected: Bool
-    let onTap: () -> Void
-    
-    private var dayLetter: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEEE" // Single letter day format
-        return formatter.string(from: date)
-    }
-    
-    private var dayNumber: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter.string(from: date)
-    }
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(dayLetter)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            Circle()
-                .fill(backgroundColor)
-                .overlay {
-                    Text(dayNumber)
-                        .font(.caption2)
-                        .foregroundStyle(isSelected ? .white : .primary)
-                }
-                .frame(width: 32, height: 32)
-        }
-        .onTapGesture(perform: onTap)
-    }
-    
-    private var backgroundColor: Color {
-        if isSelected {
-            return .blue
-        } else if hasEntry {
-            return .blue.opacity(0.2)
-        } else {
-            return .gray.opacity(0.1)
-        }
-    }
-}
 
-struct WeekView: View {
-    let currentWeek: Date
-    let entries: [DiaryEntry]
-    let selectedDate: Date
-    let onDaySelected: (Date) -> Void
-    let onWeekChange: (Date) -> Void
-    
-    private var weekDates: [Date] {
-        let calendar = Calendar.current
-        // Get start of the week for the current week date
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentWeek)
-        // Make sure we get the actual first day of week (Sunday or Monday depending on locale)
-        guard let sunday = calendar.date(from: components) else { return [] }
-        
-        return (0..<7).map { day in
-            calendar.date(byAdding: .day, value: day, to: sunday) ?? Date()
-        }
-    }
-    
-    private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: currentWeek)
-    }
-    
-    private var todayString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d"
-        return formatter.string(from: Date())
-    }
-    
-    private func hasEntry(for date: Date) -> Bool {
-        entries.contains { entry in
-            Calendar.current.isDate(entry.timestamp, inSameDayAs: date)
-        }
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header section
-            let headerContent = VStack(alignment: .leading) {
-                Text(monthYearString)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text("Today: \(Date().formatted(.dateTime.month().day()))")
-                    .font(.title2)
-                    .bold()
-            }
-            
-            HStack {
-                Button(action: { moveWeek(by: -1) }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundStyle(.blue)
-                }
-                
-                headerContent
-                
-                Spacer()
-                
-                Button(action: { moveWeek(by: 1) }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(.blue)
-                }
-            }
-            .padding(.horizontal)
-            
-            // Week view
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(weekDates, id: \.timeIntervalSince1970) { date in
-                        let isDateSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
-                        WeekDayView(
-                            date: date,
-                            hasEntry: hasEntry(for: date),
-                            isSelected: isDateSelected,
-                            onTap: { onDaySelected(date) }
-                        )
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-        .padding(.vertical)
-        .background(Color.gray.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-    
-    private func moveWeek(by numberOfWeeks: Int) {
-        let calendar = Calendar.current
-        if let newDate = calendar.date(byAdding: .weekOfYear, value: numberOfWeeks, to: currentWeek) {
-            onWeekChange(newDate)
-        }
-    }
-}
 
 // MARK: - Settings View
 struct SettingsView: View {
@@ -659,15 +554,16 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DiaryEntry.timestamp, order: .reverse) private var entries: [DiaryEntry]
     @State private var selectedItem: PhotosPickerItem?
-    @State private var selectedDate: Date
+    @State private var timeRange: TimeRange = .week
     @State private var showingEntrySheet = false
     @State private var showingImageViewer = false
     @State private var selectedEntry: DiaryEntry?
-    @State private var weeklySummary: String = "Tap 'Generate Summary' to analyze this week's entries"
+    @State private var weeklySummary: String = "Tap 'Generate Summary' to analyze this entries"
     @State private var isGeneratingSummary = false
     @State private var showingSettings = false
     @State private var currentWeek: Date
     @State private var isWeeklySummaryExpanded = false
+    @State private var selectedDate: Date
     private let openAIService = OpenAIService()
     
     init() {
@@ -677,12 +573,17 @@ struct ContentView: View {
         _currentWeek = State(initialValue: today)
     }
     
-    var weeklyEntries: [DiaryEntry] {
+    private var filteredEntries: [DiaryEntry] {
         let calendar = Calendar.current
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
-        let filtered = entries.filter { $0.timestamp >= weekAgo }
-        print("Total entries: \(entries.count), Weekly entries: \(filtered.count)")
+        let startDate = calendar.date(byAdding: .day, value: -timeRange.days, to: Date())!
+        let filtered = entries.filter { $0.timestamp >= startDate }
+        print("Total entries: \(entries.count), Filtered entries for \(timeRange.title): \(filtered.count)")
         return filtered
+    }
+    
+    private func handleTimeRangeChange(_ newRange: TimeRange) {
+        timeRange = newRange
+        generateWeeklySummary() // Regenerate summary for the new time range
     }
     
     private func handleDaySelected(_ date: Date) {
@@ -703,34 +604,26 @@ struct ContentView: View {
             List {
                 Section {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        LazyVStack(spacing: 16) {
+                            // Time Range Control
+                            TimeRangeControl(selection: $timeRange)
+                                .padding(.top)
+                            
                             // Weekly Summary Section
                             WeeklySummaryView(
                                 isExpanded: $isWeeklySummaryExpanded,
                                 summary: weeklySummary,
                                 isGenerating: isGeneratingSummary,
-                                hasEntries: !weeklyEntries.isEmpty,
+                                hasEntries: !filteredEntries.isEmpty,
                                 onGenerate: generateWeeklySummary
                             )
-                            .padding(.vertical)
                             
-                            // Weekly Calendar View
-                            WeekView(
-                                currentWeek: currentWeek,
-                                entries: entries,
-                                selectedDate: selectedDate,
-                                onDaySelected: handleDaySelected,
-                                onWeekChange: handleWeekChange
-                            )
-                            .padding(.horizontal)
-                            
-                            // Add Weekly Trend Chart
-                            WeeklyTrendChart(entries: entries)
+                            // Trend Chart
+                            TrendChart(entries: entries, timeRange: timeRange)
                                 .padding(.horizontal)
-                                .padding(.top)
                         }
                     }
-                    .frame(maxHeight: 600) // Increased to accommodate the chart
+                    .frame(maxHeight: 500)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                 }
@@ -793,22 +686,22 @@ struct ContentView: View {
     }
     
     private func generateWeeklySummary() {
-        guard !weeklyEntries.isEmpty else {
-            print("No weekly entries found")
+        guard !filteredEntries.isEmpty else {
+            print("No entries found for selected time range")
             return
         }
         
-        print("Generating summary for \(weeklyEntries.count) entries")
+        print("Generating summary for \(filteredEntries.count) entries")
         isGeneratingSummary = true
         Task {
             do {
-                let summary = try await openAIService.generateWeeklySummary(from: weeklyEntries)
+                let summary = try await openAIService.generateWeeklySummary(from: filteredEntries)
                 await MainActor.run {
                     weeklySummary = summary
                     isGeneratingSummary = false
                     
                     // Store the summary in the latest entry
-                    if let latestEntry = weeklyEntries.first {
+                    if let latestEntry = filteredEntries.first {
                         print("Storing summary in latest entry from \(latestEntry.timestamp)")
                         latestEntry.weeklySummary = summary
                         latestEntry.summaryDate = Date()
