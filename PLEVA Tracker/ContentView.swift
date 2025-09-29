@@ -43,7 +43,7 @@ struct TimeRangeControl: View {
 }
 
 // MARK: - Types and Constants
-private let plevaType = UTType("com.pleva-tracker.diary-entries")!
+private let plevaType = UTType("com.pleva-tracker.diary-entries") ?? .json
 
 // MARK: - File Document Structure
 struct JSONFile: FileDocument {
