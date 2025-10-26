@@ -26,6 +26,9 @@ public final class DiaryEntry {
     @Attribute(originalName: "papulesButtocks") public var papulesButtocks: Int = 0
     @Attribute(originalName: "papulesLeftLeg") public var papulesLeftLeg: Int = 0
     @Attribute(originalName: "papulesRightLeg") public var papulesRightLeg: Int = 0
+    @Attribute(originalName: "papulesBelly") public var papulesBelly: Int = 0
+    @Attribute(originalName: "papulesLeftFoot") public var papulesLeftFoot: Int = 0
+    @Attribute(originalName: "papulesRightFoot") public var papulesRightFoot: Int = 0
     
     public init(timestamp: Date = Date(),
          notes: String = "",
@@ -42,7 +45,10 @@ public final class DiaryEntry {
          papulesBack: Int = 0,
          papulesButtocks: Int = 0,
          papulesLeftLeg: Int = 0,
-         papulesRightLeg: Int = 0) {
+         papulesRightLeg: Int = 0,
+         papulesBelly: Int = 0,
+         papulesLeftFoot: Int = 0,
+         papulesRightFoot: Int = 0) {
         self.timestamp = timestamp
         self.notes = notes
         self.severity = severity
@@ -59,5 +65,8 @@ public final class DiaryEntry {
         self.papulesButtocks = papulesButtocks
         self.papulesLeftLeg = papulesLeftLeg
         self.papulesRightLeg = papulesRightLeg
+        self.papulesBelly = papulesBelly
+        self.papulesLeftFoot = papulesLeftFoot
+        self.papulesRightFoot = papulesRightFoot
     }
 }

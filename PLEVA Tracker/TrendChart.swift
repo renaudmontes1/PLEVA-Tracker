@@ -114,7 +114,7 @@ struct TrendChart: View {
             let average = counts.isEmpty ? 0.0 : Double(sum) / Double(counts.count)
             print("TrendChart: Period of \(periodStart.formatted()): Count=\(counts.count), Average=\(average)")
             return ChartData(date: periodStart, averageCount: average)
-        }.sorted { $0.date > $1.date } // Sort in reverse chronological order
+        }.sorted { $0.date < $1.date } // Sort in chronological order (oldest to newest)
     }
     
     private var chartContent: some View {
@@ -168,11 +168,40 @@ struct TrendChart: View {
     }
     
     private var chartView: some View {
-        ScrollView(.horizontal, showsIndicators: true) {
-            chartContent
-                .frame(width: max(UIScreen.main.bounds.width, CGFloat(chartData.count) * 80))
-                .frame(height: 200)
-                .padding()
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: true) {
+                HStack(spacing: 0) {
+                    chartContent
+                        .frame(width: max(UIScreen.main.bounds.width, CGFloat(chartData.count) * 80))
+                        .frame(height: 200)
+                        .padding()
+                    
+                    // Add an invisible anchor at the end to scroll to
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .id("trailingEdge")
+                }
+            }
+            .onAppear {
+                // Scroll to the trailing edge (latest data) when the view appears
+                scrollToLatest(proxy: proxy)
+            }
+            .onChange(of: timeRange) { oldValue, newValue in
+                // Scroll to the trailing edge when time range changes
+                scrollToLatest(proxy: proxy)
+            }
+            .onChange(of: chartData.count) { oldValue, newValue in
+                // Scroll to the trailing edge when data changes
+                scrollToLatest(proxy: proxy)
+            }
+        }
+    }
+    
+    private func scrollToLatest(proxy: ScrollViewProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                proxy.scrollTo("trailingEdge", anchor: .trailing)
+            }
         }
     }
     

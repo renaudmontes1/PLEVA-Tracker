@@ -92,6 +92,10 @@ struct DiaryEntryExport: Codable {
     let papulesButtocks: Int
     let papulesLeftLeg: Int
     let papulesRightLeg: Int
+
+    let papulesBelly: Int
+    let papulesLeftFoot: Int
+    let papulesRightFoot: Int
     let photos: [Data]
     
     init(from entry: DiaryEntry) {
@@ -110,6 +114,9 @@ struct DiaryEntryExport: Codable {
         self.papulesButtocks = entry.papulesButtocks
         self.papulesLeftLeg = entry.papulesLeftLeg
         self.papulesRightLeg = entry.papulesRightLeg
+        self.papulesBelly = entry.papulesBelly
+        self.papulesLeftFoot = entry.papulesLeftFoot
+        self.papulesRightFoot = entry.papulesRightFoot
         self.photos = entry.photos
     }
     
@@ -130,7 +137,11 @@ struct DiaryEntryExport: Codable {
             papulesBack: self.papulesBack,
             papulesButtocks: self.papulesButtocks,
             papulesLeftLeg: self.papulesLeftLeg,
-            papulesRightLeg: self.papulesRightLeg
+            papulesRightLeg: self.papulesRightLeg,
+            
+            papulesBelly: self.papulesBelly,
+            papulesLeftFoot: self.papulesLeftFoot,
+            papulesRightFoot: self.papulesRightFoot
         )
     }
 }
@@ -817,7 +828,10 @@ struct EntryRowView: View {
         entry.papulesBack +
         entry.papulesButtocks +
         entry.papulesLeftLeg +
-        entry.papulesRightLeg
+        entry.papulesRightLeg +
+        entry.papulesBelly +
+        entry.papulesLeftFoot +
+        entry.papulesRightFoot
     }
     
     var body: some View {
@@ -902,6 +916,9 @@ struct EntryFormView: View {
     @State private var papulesButtocks: Int = 0
     @State private var papulesLeftLeg: Int = 0
     @State private var papulesRightLeg: Int = 0
+    @State private var papulesBelly: Int = 0
+    @State private var papulesLeftFoot: Int = 0
+    @State private var papulesRightFoot: Int = 0
     @State private var entryDate: Date
     @FocusState private var focusedField: String?
     
@@ -960,12 +977,15 @@ struct EntryFormView: View {
                 PapuleCountView(title: "Face", count: $papulesFace, id: "face", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Neck", count: $papulesNeck, id: "neck", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Chest", count: $papulesChest, id: "chest", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Belly", count: $papulesBelly, id: "belly", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Left Arm", count: $papulesLeftArm, id: "leftArm", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Right Arm", count: $papulesRightArm, id: "rightArm", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Back", count: $papulesBack, id: "back", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Buttocks", count: $papulesButtocks, id: "buttocks", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Left Leg", count: $papulesLeftLeg, id: "leftLeg", focusedField: _focusedField.projectedValue)
                 PapuleCountView(title: "Right Leg", count: $papulesRightLeg, id: "rightLeg", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Left Foot", count: $papulesLeftFoot, id: "leftFoot", focusedField: _focusedField.projectedValue)
+                PapuleCountView(title: "Right Foot", count: $papulesRightFoot, id: "rightFoot", focusedField: _focusedField.projectedValue)
             }
             
             if entry != nil {
@@ -1010,6 +1030,9 @@ struct EntryFormView: View {
                 papulesButtocks = entry.papulesButtocks
                 papulesLeftLeg = entry.papulesLeftLeg
                 papulesRightLeg = entry.papulesRightLeg
+                papulesBelly = entry.papulesBelly
+                papulesLeftFoot = entry.papulesLeftFoot
+                papulesRightFoot = entry.papulesRightFoot
             }
         }
         .onChange(of: selectedPhotos) { oldValue, newValue in
@@ -1051,6 +1074,9 @@ struct EntryFormView: View {
             entry.papulesButtocks = papulesButtocks
             entry.papulesLeftLeg = papulesLeftLeg
             entry.papulesRightLeg = papulesRightLeg
+            entry.papulesBelly = papulesBelly
+            entry.papulesLeftFoot = papulesLeftFoot
+            entry.papulesRightFoot = papulesRightFoot
         } else {
             // Create new entry using the date picker's selected date and time
             let timestamp = entryDate
@@ -1069,7 +1095,10 @@ struct EntryFormView: View {
                 papulesBack: papulesBack,
                 papulesButtocks: papulesButtocks,
                 papulesLeftLeg: papulesLeftLeg,
-                papulesRightLeg: papulesRightLeg
+                papulesRightLeg: papulesRightLeg,
+                papulesBelly: papulesBelly,
+                papulesLeftFoot: papulesLeftFoot,
+                papulesRightFoot: papulesRightFoot
             )
             modelContext.insert(newEntry)
         }
