@@ -644,9 +644,10 @@ struct ContentView: View {
                     EntryRowView(entry: entry)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .onTapGesture {
-                            selectedDate = entry.timestamp // Use the tapped entry's timestamp
-                            selectedEntry = entry // Directly use the tapped entry
-                            showingEntrySheet = true
+                            print("Tapped entry at: \(entry.timestamp)")
+                            print("Entry papulesFace: \(entry.papulesFace)")
+                            selectedEntry = entry // This will trigger the .sheet(item:) modifier
+                            print("selectedEntry set to: \(selectedEntry?.timestamp ?? Date())")
                         }
                 }
                 .onDelete(perform: deleteEntries)
@@ -681,10 +682,21 @@ struct ContentView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .edgesIgnoringSafeArea(.bottom)
+            .sheet(item: $selectedEntry) { entry in
+                NavigationStack {
+                    EntryFormView(entry: entry, selectedDate: entry.timestamp)
+                        .id(entry.timestamp) // Force view recreation for each unique entry
+                        .navigationTitle("Edit Entry")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .background(Color(uiColor: .systemGroupedBackground))
+                }
+                .presentationDetents([.medium, .large])
+            }
             .sheet(isPresented: $showingEntrySheet) {
                 NavigationStack {
-                    EntryFormView(entry: selectedEntry, selectedDate: selectedDate)
-                        .navigationTitle(selectedEntry == nil ? "New Entry" : "Edit Entry")
+                    EntryFormView(entry: nil, selectedDate: selectedDate)
+                        .id(selectedDate) // Force view recreation
+                        .navigationTitle("New Entry")
                         .navigationBarTitleDisplayMode(.inline)
                         .background(Color(uiColor: .systemGroupedBackground))
                 }
@@ -974,18 +986,36 @@ struct EntryFormView: View {
             }
             
             Section("Papule Count") {
-                PapuleCountView(title: "Face", count: $papulesFace, id: "face", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Neck", count: $papulesNeck, id: "neck", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Chest", count: $papulesChest, id: "chest", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Belly", count: $papulesBelly, id: "belly", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Left Arm", count: $papulesLeftArm, id: "leftArm", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Right Arm", count: $papulesRightArm, id: "rightArm", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Back", count: $papulesBack, id: "back", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Buttocks", count: $papulesButtocks, id: "buttocks", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Left Leg", count: $papulesLeftLeg, id: "leftLeg", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Right Leg", count: $papulesRightLeg, id: "rightLeg", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Left Foot", count: $papulesLeftFoot, id: "leftFoot", focusedField: _focusedField.projectedValue)
-                PapuleCountView(title: "Right Foot", count: $papulesRightFoot, id: "rightFoot", focusedField: _focusedField.projectedValue)
+                DualPapuleCountView(
+                    leftTitle: "Face", leftCount: $papulesFace, leftId: "face",
+                    rightTitle: "Neck", rightCount: $papulesNeck, rightId: "neck",
+                    focusedField: _focusedField.projectedValue
+                )
+                DualPapuleCountView(
+                    leftTitle: "Chest", leftCount: $papulesChest, leftId: "chest",
+                    rightTitle: "Back", rightCount: $papulesBack, rightId: "back",
+                    focusedField: _focusedField.projectedValue
+                )
+                DualPapuleCountView(
+                    leftTitle: "Left Arm", leftCount: $papulesLeftArm, leftId: "leftArm",
+                    rightTitle: "Right Arm", rightCount: $papulesRightArm, rightId: "rightArm",
+                    focusedField: _focusedField.projectedValue
+                )
+                DualPapuleCountView(
+                    leftTitle: "Left Leg", leftCount: $papulesLeftLeg, leftId: "leftLeg",
+                    rightTitle: "Right Leg", rightCount: $papulesRightLeg, rightId: "rightLeg",
+                    focusedField: _focusedField.projectedValue
+                )
+                DualPapuleCountView(
+                    leftTitle: "Left Foot", leftCount: $papulesLeftFoot, leftId: "leftFoot",
+                    rightTitle: "Right Foot", rightCount: $papulesRightFoot, rightId: "rightFoot",
+                    focusedField: _focusedField.projectedValue
+                )
+                DualPapuleCountView(
+                    leftTitle: "Belly", leftCount: $papulesBelly, leftId: "belly",
+                    rightTitle: "Buttocks", rightCount: $papulesButtocks, rightId: "buttocks",
+                    focusedField: _focusedField.projectedValue
+                )
             }
             
             if entry != nil {
@@ -1016,7 +1046,13 @@ struct EntryFormView: View {
             }
         }
         .onAppear {
+            // Load entry data when view appears
+            print("EntryFormView.onAppear - entry exists: \(entry != nil)")
             if let entry = entry {
+                print("Loading entry from: \(entry.timestamp)")
+                print("Entry notes: \(entry.notes)")
+                print("Entry papulesFace: \(entry.papulesFace)")
+                
                 notes = entry.notes
                 severity = entry.severity
                 location = entry.location
@@ -1033,6 +1069,10 @@ struct EntryFormView: View {
                 papulesBelly = entry.papulesBelly
                 papulesLeftFoot = entry.papulesLeftFoot
                 papulesRightFoot = entry.papulesRightFoot
+                
+                print("State variables loaded - papulesFace: \(papulesFace)")
+            } else {
+                print("No entry to load - creating new entry")
             }
         }
         .onChange(of: selectedPhotos) { oldValue, newValue in
@@ -1132,6 +1172,63 @@ struct PapuleCountView: View {
                 .textFieldStyle(.roundedBorder)
                 .focused(focusedField, equals: id)
                 .tag(id)
+        }
+    }
+}
+
+struct DualPapuleCountView: View {
+    let leftTitle: String
+    @Binding var leftCount: Int
+    let leftId: String
+    let rightTitle: String
+    @Binding var rightCount: Int
+    let rightId: String
+    var focusedField: FocusState<String?>.Binding
+    
+    private static let numberFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .none
+        formatter.zeroSymbol = ""
+        return formatter
+    }()
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Left side
+            HStack {
+                Text(leftTitle)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                TextField("", value: $leftCount, formatter: Self.numberFormatter)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 50)
+                    .textFieldStyle(.roundedBorder)
+                    .focused(focusedField, equals: leftId)
+                    .tag(leftId)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Divider
+            Divider()
+                .frame(height: 30)
+            
+            // Right side
+            HStack {
+                Text(rightTitle)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                TextField("", value: $rightCount, formatter: Self.numberFormatter)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 50)
+                    .textFieldStyle(.roundedBorder)
+                    .focused(focusedField, equals: rightId)
+                    .tag(rightId)
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 }
