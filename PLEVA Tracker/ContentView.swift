@@ -393,6 +393,41 @@ struct SettingsView: View {
                 Section("Changelog") {
                     VStack(alignment: .leading, spacing: 8) {
                         Group {
+                            //Text("Version 1.0.6")
+                            //    .font(.headline)
+                            
+                            Text("November 2, 2025")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Latest Updates:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach([
+                                        "Added Belly, Left Foot, and Right Foot tracking",
+                                        "Optimized papule count form with dual-column layout",
+                                        "Auto-scroll to latest data in trend charts",
+                                        "Hidden Location field (data preserved)",
+                                        "Fixed latest entry data loading issue"
+                                    ], id: \.self) { feature in
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("•")
+                                            Text(feature)
+                                        }
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.bottom, 16)
+                        
+                        /* 
+                        Group {
                             Text("Version 1.0.5")
                                 .font(.headline)
                             
@@ -401,7 +436,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.secondary)
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Latest Updates:")
+                                Text("Updates:")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                                 
@@ -490,28 +525,30 @@ struct SettingsView: View {
                                 .padding(.top, 4)
                             }
                         }
+                        */
                     }
                 }
                 
-                Section("Configuration Values") {
-                    ForEach(Array(plistContents.keys.sorted()), id: \.self) { key in
-                        if let value = plistContents[key] {
-                            VStack(alignment: .leading) {
-                                Text(key)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text(value)
-                                    .font(.callout)
-                            }
-                        }
-                    }
-                }
+                // Section("Configuration Values") {
+                //     ForEach(Array(plistContents.keys.sorted()), id: \.self) { key in
+                //         if let value = plistContents[key] {
+                //             VStack(alignment: .leading) {
+                //                 Text(key)
+                //                     .font(.caption)
+                //                     .foregroundStyle(.secondary)
+                //                 Text(value)
+                //                     .font(.callout)
+                //             }
+                //         }
+                //     }
+                // }
                 
                 Section("About") {
-                    Text("PLEVA Diary")
+                    Text("PLEVA Tracker")
                         .foregroundStyle(.secondary)
                     Text("Version 1.0")
                         .foregroundStyle(.secondary)
+                    Text("Feedback: renaud@claivel.com")
                 }
             }
             .navigationTitle("Settings")
@@ -851,9 +888,7 @@ struct EntryRowView: View {
             VStack(alignment: .leading) {
                 Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
                     .font(.headline)
-                Text(entry.location)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                // Location field is no longer displayed (kept in data for backwards compatibility)
                 if (!entry.notes.isEmpty) {
                     Text(entry.notes)
                         .lineLimit(2)
@@ -951,13 +986,9 @@ struct EntryFormView: View {
                 )
             }
             
-            Section("Notes") {
+            Section("Notes (For AI Insights)") {
                 TextEditor(text: $notes)
                     .frame(height: 100)
-            }
-            
-            Section("Location") {
-                TextField("Body location", text: $location)
             }
             
             Section("Severity (1-5)") {
